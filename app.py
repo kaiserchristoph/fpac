@@ -1,9 +1,14 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, login_required, current_user
-from extensions import db, login_manager
-from models import User, Image
+import base64
+import io
 import os
 from datetime import datetime
+
+from flask import Flask, render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, login_required, current_user
+from PIL import Image as PILImage
+
+from extensions import db, login_manager
+from models import User, Image
 
 def create_app():
     app = Flask(__name__)
@@ -79,14 +84,10 @@ def create_app():
         image_data = data['image']
         
         # Remove header of data URL
-        import base64
         image_data = image_data.replace('data:image/png;base64,', '')
         image_bytes = base64.b64decode(image_data)
         
         # Save as BMP
-        from PIL import Image as PILImage
-        import io
-        
         try:
             image = PILImage.open(io.BytesIO(image_bytes))
             filename = f"drawing_{current_user.id}_{int(datetime.utcnow().timestamp())}.bmp"
@@ -114,7 +115,6 @@ def create_app():
                 flash('No selected file')
                 return redirect(request.url)
             if file:
-                from PIL import Image as PILImage
                 try:
                     image = PILImage.open(file)
                     # Convert to RGB to avoid issues with transparency or different modes
