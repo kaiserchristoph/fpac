@@ -11,7 +11,6 @@
             {% for display in displays %}
                 <option value="{{ loop.index0 }}">{{ display.name }}</option>
             {% endfor %}
-            <option value="custom">Custom</option>
         </select>
     </div>
     <br>
@@ -84,12 +83,6 @@
             const widthInput = document.getElementById('width');
             const heightInput = document.getElementById('height');
 
-            if (select.value === 'custom') {
-                widthInput.max = 128;
-                heightInput.max = 128;
-                return;
-            }
-
             const display = displays[parseInt(select.value)];
             if (display) {
                 // Set values
@@ -155,7 +148,7 @@
             
             const displaySelect = document.getElementById('displaySelect');
             let displayName = null;
-            if (displaySelect.value !== 'custom') {
+            if (displaySelect.value) {
                 displayName = displays[parseInt(displaySelect.value)].name;
             }
 
