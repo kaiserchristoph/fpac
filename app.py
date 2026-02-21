@@ -155,6 +155,27 @@ def create_app():
         img = Image.query.get_or_404(image_id)
         return redirect(url_for('static', filename='uploads/' + img.filename))
 
+    @app.route('/api/image/<int:image_id>/rgb')
+    def api_get_image_rgb(image_id):
+        img = Image.query.get_or_404(image_id)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], img.filename)
+        try:
+            image = PILImage.open(filepath)
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
+
+            pixels = list(image.getdata())
+            # Convert list of tuples to list of lists
+            pixels_list = [list(p) for p in pixels]
+
+            return {
+                'width': image.width,
+                'height': image.height,
+                'pixels': pixels_list
+            }
+        except Exception as e:
+            return {'error': str(e)}, 500
+
     return app
 
 if __name__ == '__main__':
