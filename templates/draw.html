@@ -212,5 +212,12 @@
         if (displays.length > 0) {
             onDisplayChange();
         }
+
+        document.getElementById('scrollDirection').addEventListener('change', function() {
+            const speedInput = document.getElementById('scrollSpeed');
+            if (this.value !== 'none' && parseInt(speedInput.value) === 0) {
+                speedInput.value = 1;
+            }
+        });
     </script>
 {% endblock %}
