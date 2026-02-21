@@ -26,6 +26,13 @@
     <br>
 
     <div>
+        <label for="zoom">Zoom (Pixel Size):</label>
+        <input type="range" id="zoom" min="1" max="20" value="10" oninput="updateZoom(this.value)">
+        <span id="zoomValue">10</span>
+    </div>
+    <br>
+
+    <div>
         <label for="scrollDirection">Scroll Direction:</label>
         <select id="scrollDirection">
             <option value="none">None</option>
@@ -120,6 +127,31 @@
 
                 resizeCanvas();
             }
+        }
+
+        function updateZoom(newSize) {
+            newSize = parseInt(newSize);
+            document.getElementById('zoomValue').innerText = newSize;
+
+            // Create temp canvas to save current image
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // Update pixel size
+            pixelSize = newSize;
+
+            // Resize main canvas
+            canvas.width = width * pixelSize;
+            canvas.height = height * pixelSize;
+
+            // Disable smoothing for pixel art scaling
+            ctx.imageSmoothingEnabled = false;
+
+            // Draw back the saved image scaled to new size
+            ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
         }
 
         function setColor(color) {
