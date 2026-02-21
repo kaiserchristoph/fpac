@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Draw Pixel Art{% endblock %}
+
+{% block content %}
+    <h1>Draw Pixel Art</h1>
+    <div>
+        <label for="width">Width:</label>
+        <input type="number" id="width" value="32" min="1" max="128">
+        <label for="height">Height:</label>
+        <input type="number" id="height" value="32" min="1" max="128">
+        <button onclick="resizeCanvas()">Resize</button>
+    </div>
+    <br>
+    <div>
+        <label for="color">Color:</label>
+        <input type="color" id="color" value="#000000">
+        <button onclick="setColor('#000000')">Black</button>
+        <button onclick="setColor('#FFFFFF')">White</button>
+        <button onclick="setColor('#FF0000')">Red</button>
+        <button onclick="setColor('#00FF00')">Green</button>
+        <button onclick="setColor('#0000FF')">Blue</button>
+    </div>
+    <br>
+    <canvas id="pixelCanvas" width="320" height="320" style="border:1px solid #000; cursor: crosshair;"></canvas>
+    <br>
+    <button onclick="saveImage()">Save</button>
+
+    <script>
+        const canvas = document.getElementById('pixelCanvas');
+        const ctx = canvas.getContext('2d');
+        let pixelSize = 10;
+        let width = 32;
+        let height = 32;
+        let isDrawing = false;
+        let currentColor = '#000000';
+
+        // Initialize canvas with white background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        function resizeCanvas() {
+            width = parseInt(document.getElementById('width').value);
+            height = parseInt(document.getElementById('height').value);
+            canvas.width = width * pixelSize;
+            canvas.height = height * pixelSize;
+            
+            // Fill with white on resize
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function setColor(color) {
+            currentColor = color;
+            document.getElementById('color').value = color;
+        }
+
+        document.getElementById('color').addEventListener('change', (e) => {
+            currentColor = e.target.value;
+        });
+
+        function drawPixel(x, y) {
+            const col = Math.floor(x / pixelSize);
+            const row = Math.floor(y / pixelSize);
+            
+            ctx.fillStyle = currentColor;
+            ctx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            drawPixel(e.offsetX, e.offsetY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                drawPixel(e.offsetX, e.offsetY);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
+
+        function saveImage() {
+            // Create a temporary canvas to draw the image at 1:1 scale
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Draw the image onto the temp canvas, scaling down
+            tempCtx.drawImage(canvas, 0, 0, width, height);
+            
+            // Get data URL
+            const dataURL = tempCanvas.toDataURL('image/png');
+            
+            // Send to server
+            fetch('{{ url_for("save_drawing") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: dataURL }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Image saved successfully!');
+                    window.location.href = '{{ url_for("index") }}';
+                } else {
+                    alert('Error saving image: ' + data.error);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error saving image');
+            });
+        }
+    </script>
+{% endblock %}
