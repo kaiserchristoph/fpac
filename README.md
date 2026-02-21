@@ -4,7 +4,7 @@ A Flask-based web application designed for creating and managing pixel art, spec
 
 ## Features
 
-- **Web-based Drawing Interface**: Create pixel art on a custom grid (default 64x16).
+- **Web-based Drawing Interface**: Create pixel art on a custom grid (default 32x16).
 - **User Authentication**: Secure registration and login system.
 - **Display Configuration**: Support for multiple display sizes via `displays.json`.
 - **Image Management**:
@@ -58,8 +58,8 @@ Example `displays.json`:
 ```json
 [
   {
-    "name": "Standard 64x16",
-    "width": 64,
+    "name": "Standard 32x16",
+    "width": 32,
     "height": 16,
     "max_width": 64,
     "max_height": 32
@@ -83,10 +83,10 @@ Returns a list of all available images with metadata.
     {
       "id": 1,
       "filename": "drawing_1_1623456789.bmp",
-      "width": 64,
+      "width": 32,
       "height": 16,
       "url": "http://localhost:5000/static/uploads/drawing_1_1623456789.bmp",
-      "display_name": "Standard 64x16",
+      "display_name": "Standard 32x16",
       "scroll_direction": "none",
       "scroll_speed": 0
     }
@@ -97,13 +97,16 @@ Returns a list of all available images with metadata.
 ### Get Image RGB Data
 **Endpoint:** `GET /api/image/<id>/rgb`
 
-Returns the pixel data for a specific image in a format easy to process by microcontrollers.
+Returns the pixel data for a specific image in a format easy to process by microcontrollers, including scrolling information.
 
 **Response Example:**
 ```json
 {
-  "width": 64,
+  "width": 32,
   "height": 16,
+  "display_name": "Standard 32x16",
+  "scroll_direction": "none",
+  "scroll_speed": 0,
   "pixels": [
     [255, 0, 0], [0, 255, 0], [0, 0, 255], ...
   ]

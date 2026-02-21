@@ -197,6 +197,7 @@ def create_app():
                 'width': image.width,
                 'height': image.height,
                 'display_name': img.display_name,
+                # Return scrolling configuration for display client
                 'scroll_direction': img.scroll_direction,
                 'scroll_speed': img.scroll_speed,
                 'pixels': pixels_list
