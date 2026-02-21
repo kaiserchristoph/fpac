@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+import json
 from datetime import datetime
 
 from flask import Flask, render_template, redirect, url_for, flash, request
@@ -16,6 +17,14 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
     
+    # Load displays configuration
+    displays_path = os.path.join(os.path.dirname(__file__), 'displays.json')
+    if os.path.exists(displays_path):
+        with open(displays_path, 'r') as f:
+            app.config['DISPLAYS'] = json.load(f)
+    else:
+        app.config['DISPLAYS'] = []
+
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
 
@@ -75,13 +84,16 @@ def create_app():
     @app.route('/draw')
     @login_required
     def draw():
-        return render_template('draw.html')
+        return render_template('draw.html', displays=app.config.get('DISPLAYS', []))
 
     @app.route('/save_drawing', methods=['POST'])
     @login_required
     def save_drawing():
         data = request.get_json()
         image_data = data['image']
+        display_name = data.get('display_name')
+        scroll_direction = data.get('scroll_direction', 'none')
+        scroll_speed = data.get('scroll_speed', 0)
         
         # Remove header of data URL
         image_data = image_data.replace('data:image/png;base64,', '')
@@ -95,7 +107,15 @@ def create_app():
             image.save(filepath, 'BMP')
             
             # Save to DB
-            db_image = Image(filename=filename, user_id=current_user.id, width=image.width, height=image.height)
+            db_image = Image(
+                filename=filename,
+                user_id=current_user.id,
+                width=image.width,
+                height=image.height,
+                display_name=display_name,
+                scroll_direction=scroll_direction,
+                scroll_speed=scroll_speed
+            )
             db.session.add(db_image)
             db.session.commit()
             
@@ -125,6 +145,8 @@ def create_app():
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     image.save(filepath, 'BMP')
                     
+                    # For uploaded images, we might not have display info, or could default it.
+                    # Currently leaving as default (None/null)
                     db_image = Image(filename=filename, user_id=current_user.id, width=image.width, height=image.height)
                     db.session.add(db_image)
                     db.session.commit()
@@ -146,7 +168,10 @@ def create_app():
                 'filename': img.filename,
                 'width': img.width,
                 'height': img.height,
-                'url': url_for('static', filename='uploads/' + img.filename, _external=True)
+                'url': url_for('static', filename='uploads/' + img.filename, _external=True),
+                'display_name': img.display_name,
+                'scroll_direction': img.scroll_direction,
+                'scroll_speed': img.scroll_speed
             })
         return {'images': image_list}
 
@@ -171,6 +196,9 @@ def create_app():
             return {
                 'width': image.width,
                 'height': image.height,
+                'display_name': img.display_name,
+                'scroll_direction': img.scroll_direction,
+                'scroll_speed': img.scroll_speed,
                 'pixels': pixels_list
             }
         except Exception as e:

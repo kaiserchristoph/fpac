@@ -25,3 +25,7 @@ class Image(db.Model):
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
 
+    # New fields for display configuration
+    display_name = db.Column(db.String(64), nullable=True)
+    scroll_direction = db.Column(db.String(10), nullable=True, default='none')
+    scroll_speed = db.Column(db.Integer, nullable=True, default=0)
