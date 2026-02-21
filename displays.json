@@ -1,7 +1,7 @@
 [
   {
-    "name": "Standard 64x16",
-    "width": 64,
+    "name": "Standard 32x16",
+    "width": 32,
     "height": 16,
     "max_width": 64,
     "max_height": 32
