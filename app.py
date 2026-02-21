@@ -11,11 +11,15 @@ from PIL import Image as PILImage
 from extensions import db, login_manager
 from models import User, Image
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'dev-secret-key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+    app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+
+    if test_config:
+        app.config.update(test_config)
     
     # Load displays configuration
     displays_path = os.path.join(os.path.dirname(__file__), 'displays.json')

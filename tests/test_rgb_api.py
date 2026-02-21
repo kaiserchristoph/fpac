@@ -11,10 +11,11 @@ from PIL import Image as PILImage
 class RGBAPITestCase(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
-        self.app = create_app()
-        self.app.config['TESTING'] = True
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        self.app.config['UPLOAD_FOLDER'] = self.test_dir
+        self.app = create_app({
+            'TESTING': True,
+            'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+            'UPLOAD_FOLDER': self.test_dir
+        })
         self.client = self.app.test_client()
         with self.app.app_context():
             db.create_all()
