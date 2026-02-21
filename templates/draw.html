@@ -4,6 +4,18 @@
 
 {% block content %}
     <h1>Draw Pixel Art</h1>
+
+    <div>
+        <label for="displaySelect">Display:</label>
+        <select id="displaySelect" onchange="onDisplayChange()">
+            {% for display in displays %}
+                <option value="{{ loop.index0 }}">{{ display.name }}</option>
+            {% endfor %}
+            <option value="custom">Custom</option>
+        </select>
+    </div>
+    <br>
+
     <div>
         <label for="width">Width:</label>
         <input type="number" id="width" value="32" min="1" max="128">
@@ -12,6 +24,22 @@
         <button onclick="resizeCanvas()">Resize</button>
     </div>
     <br>
+
+    <div>
+        <label for="scrollDirection">Scroll Direction:</label>
+        <select id="scrollDirection">
+            <option value="none">None</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+        </select>
+
+        <label for="scrollSpeed">Speed (px/s):</label>
+        <input type="number" id="scrollSpeed" value="0" min="0" max="100">
+    </div>
+    <br>
+
     <div>
         <label for="color">Color:</label>
         <input type="color" id="color" value="#000000">
@@ -27,6 +55,7 @@
     <button onclick="saveImage()">Save</button>
 
     <script>
+        const displays = {{ displays|tojson|safe }};
         const canvas = document.getElementById('pixelCanvas');
         const ctx = canvas.getContext('2d');
         let pixelSize = 10;
@@ -48,6 +77,31 @@
             // Fill with white on resize
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function onDisplayChange() {
+            const select = document.getElementById('displaySelect');
+            const widthInput = document.getElementById('width');
+            const heightInput = document.getElementById('height');
+
+            if (select.value === 'custom') {
+                widthInput.max = 128;
+                heightInput.max = 128;
+                return;
+            }
+
+            const display = displays[parseInt(select.value)];
+            if (display) {
+                // Set values
+                widthInput.value = display.width;
+                heightInput.value = display.height;
+
+                // Set max values
+                if (display.max_width) widthInput.max = display.max_width;
+                if (display.max_height) heightInput.max = display.max_height;
+
+                resizeCanvas();
+            }
         }
 
         function setColor(color) {
@@ -99,13 +153,27 @@
             // Get data URL
             const dataURL = tempCanvas.toDataURL('image/png');
             
+            const displaySelect = document.getElementById('displaySelect');
+            let displayName = null;
+            if (displaySelect.value !== 'custom') {
+                displayName = displays[parseInt(displaySelect.value)].name;
+            }
+
+            const scrollDirection = document.getElementById('scrollDirection').value;
+            const scrollSpeed = parseInt(document.getElementById('scrollSpeed').value);
+
             // Send to server
             fetch('{{ url_for("save_drawing") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ image: dataURL }),
+                body: JSON.stringify({
+                    image: dataURL,
+                    display_name: displayName,
+                    scroll_direction: scrollDirection,
+                    scroll_speed: scrollSpeed
+                }),
             })
             .then(response => response.json())
             .then(data => {
@@ -120,6 +188,11 @@
                 console.error('Error:', error);
                 alert('Error saving image');
             });
+        }
+
+        // Initialize with default display if available
+        if (displays.length > 0) {
+            onDisplayChange();
         }
     </script>
 {% endblock %}
