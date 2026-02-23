@@ -82,7 +82,7 @@ def upload():
                     user_id=current_user.id,
                     upload_folder=current_app.config['UPLOAD_FOLDER'],
                     filename_prefix="upload_",
-                    executor=None
+                    executor=current_app.executor
                 )
 
                 flash('File uploaded successfully')
