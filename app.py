@@ -209,4 +209,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', debug=True)
+    # Only enable debug mode if FLASK_DEBUG is explicitly set to a truthy value
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
+    app.run(host='0.0.0.0', debug=debug_mode)
