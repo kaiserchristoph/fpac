@@ -33,7 +33,7 @@
                 // Only show this message if we have NO images at all, or if filtering resulted in none.
                 // But if we're filtering, maybe we just show "No images for this display".
                 // For now, let's keep it simple.
-                gallery.innerHTML = '<p>No images found. <a href="{{ url_for("draw") }}">Draw one!</a></p>';
+                gallery.innerHTML = '<p>No images found. <a href="{{ url_for("main.draw") }}">Draw one!</a></p>';
                 return;
             }
 
@@ -85,7 +85,7 @@
             renderGallery(filteredImages);
         }
 
-        fetch('{{ url_for("api_list_images") }}')
+        fetch('{{ url_for("api.api_list_images") }}')
             .then(response => response.json())
             .then(data => {
                 allImages = data.images;
