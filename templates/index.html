@@ -43,14 +43,32 @@
 
                 let displayText = img.display_name ? img.display_name : 'Unknown';
 
-                item.innerHTML = `
-                    <a href="${img.url}" target="_blank">
-                        <img src="${img.url}" alt="${img.filename}">
-                    </a>
-                    <br>
-                    <small>${img.width}x${img.height}</small><br>
-                    <small>${displayText}</small>
-                `;
+                // Create link
+                const link = document.createElement('a');
+                link.href = img.url;
+                link.target = "_blank";
+
+                // Create image
+                const image = document.createElement('img');
+                image.src = img.url;
+                image.alt = img.filename;
+
+                link.appendChild(image);
+                item.appendChild(link);
+
+                item.appendChild(document.createElement('br'));
+
+                // Create dimensions text
+                const dimText = document.createElement('small');
+                dimText.textContent = `${img.width}x${img.height}`;
+                item.appendChild(dimText);
+
+                item.appendChild(document.createElement('br'));
+
+                // Create display text - use textContent to prevent XSS
+                const nameText = document.createElement('small');
+                nameText.textContent = displayText;
+                item.appendChild(nameText);
                 gallery.appendChild(item);
             });
         }
