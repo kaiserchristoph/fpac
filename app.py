@@ -2,6 +2,7 @@ import base64
 import io
 import os
 import json
+import concurrent.futures
 from datetime import datetime, timezone
 
 from flask import Flask, render_template, redirect, url_for, flash, request
@@ -31,6 +32,9 @@ def create_app(test_config=None):
 
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
+
+    # ThreadPoolExecutor for offloading I/O tasks
+    app.executor = concurrent.futures.ThreadPoolExecutor()
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -108,14 +112,20 @@ def create_app(test_config=None):
             image = PILImage.open(io.BytesIO(image_bytes))
             filename = f"drawing_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image.save(filepath, 'BMP')
+
+            # Get dimensions before passing to thread
+            width = image.width
+            height = image.height
             
-            # Save to DB
+            # Offload blocking file write to thread pool
+            future = app.executor.submit(image.save, filepath, 'BMP')
+
+            # Save to DB concurrent with file write
             db_image = Image(
                 filename=filename,
                 user_id=current_user.id,
-                width=image.width,
-                height=image.height,
+                width=width,
+                height=height,
                 display_name=display_name,
                 scroll_direction=scroll_direction,
                 scroll_speed=scroll_speed
@@ -123,6 +133,15 @@ def create_app(test_config=None):
             db.session.add(db_image)
             db.session.commit()
             
+            # Wait for file save to complete and handle errors
+            try:
+                future.result()
+            except Exception as e:
+                # If file save fails, rollback DB entry to maintain consistency
+                db.session.delete(db_image)
+                db.session.commit()
+                raise e
+
             return {'success': True}
         except Exception as e:
             return {'success': False, 'error': str(e)}
