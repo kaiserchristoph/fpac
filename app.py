@@ -194,8 +194,6 @@ def create_app(test_config=None):
                 image = image.convert('RGB')
 
             pixels = list(image.getdata())
-            # Convert list of tuples to list of lists
-            pixels_list = [list(p) for p in pixels]
 
             return {
                 'width': image.width,
@@ -204,7 +202,7 @@ def create_app(test_config=None):
                 # Return scrolling configuration for display client
                 'scroll_direction': img.scroll_direction,
                 'scroll_speed': img.scroll_speed,
-                'pixels': pixels_list
+                'pixels': pixels
             }
         except Exception as e:
             return {'error': str(e)}, 500
