@@ -11,6 +11,7 @@ from PIL import Image as PILImage
 
 from extensions import db, login_manager
 from models import User, Image
+from utils import save_image_artifact
 from PIL import UnidentifiedImageError
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -112,37 +113,19 @@ def create_app(test_config=None):
         # Save as BMP
         try:
             image = PILImage.open(io.BytesIO(image_bytes))
-            filename = f"drawing_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-            # Get dimensions before passing to thread
-            width = image.width
-            height = image.height
             
-            # Offload blocking file write to thread pool
-            future = app.executor.submit(image.save, filepath, 'BMP')
-
-            # Save to DB concurrent with file write
-            db_image = Image(
-                filename=filename,
+            save_image_artifact(
+                pil_image=image,
                 user_id=current_user.id,
-                width=width,
-                height=height,
-                display_name=display_name,
-                scroll_direction=scroll_direction,
-                scroll_speed=scroll_speed
+                upload_folder=app.config['UPLOAD_FOLDER'],
+                filename_prefix="drawing_",
+                metadata={
+                    'display_name': display_name,
+                    'scroll_direction': scroll_direction,
+                    'scroll_speed': scroll_speed
+                },
+                executor=app.executor
             )
-            db.session.add(db_image)
-            db.session.commit()
-            
-            # Wait for file save to complete and handle errors
-            try:
-                future.result()
-            except Exception as e:
-                # If file save fails, rollback DB entry to maintain consistency
-                db.session.delete(db_image)
-                db.session.commit()
-                raise e
 
             return {'success': True}
         except UnidentifiedImageError as e:
@@ -172,19 +155,14 @@ def create_app(test_config=None):
             if file:
                 try:
                     image = PILImage.open(file)
-                    # Convert to RGB to avoid issues with transparency or different modes
-                    if image.mode != 'RGB':
-                        image = image.convert('RGB')
-                        
-                    filename = f"upload_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    image.save(filepath, 'BMP')
                     
-                    # For uploaded images, we might not have display info, or could default it.
-                    # Currently leaving as default (None/null)
-                    db_image = Image(filename=filename, user_id=current_user.id, width=image.width, height=image.height)
-                    db.session.add(db_image)
-                    db.session.commit()
+                    save_image_artifact(
+                        pil_image=image,
+                        user_id=current_user.id,
+                        upload_folder=app.config['UPLOAD_FOLDER'],
+                        filename_prefix="upload_",
+                        executor=None
+                    )
                     
                     flash('File uploaded successfully')
                     return redirect(url_for('index'))
