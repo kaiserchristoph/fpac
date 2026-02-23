@@ -13,7 +13,7 @@ from models import User, Image
 
 def create_app(test_config=None):
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'dev-secret-key'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
