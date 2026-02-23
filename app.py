@@ -2,7 +2,7 @@ import base64
 import io
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
@@ -11,11 +11,15 @@ from PIL import Image as PILImage
 from extensions import db, login_manager
 from models import User, Image
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'dev-secret-key'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+    app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
+
+    if test_config:
+        app.config.update(test_config)
     
     # Load displays configuration
     displays_path = os.path.join(os.path.dirname(__file__), 'displays.json')
@@ -102,7 +106,7 @@ def create_app():
         # Save as BMP
         try:
             image = PILImage.open(io.BytesIO(image_bytes))
-            filename = f"drawing_{current_user.id}_{int(datetime.utcnow().timestamp())}.bmp"
+            filename = f"drawing_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             image.save(filepath, 'BMP')
             
@@ -141,7 +145,7 @@ def create_app():
                     if image.mode != 'RGB':
                         image = image.convert('RGB')
                         
-                    filename = f"upload_{current_user.id}_{int(datetime.utcnow().timestamp())}.bmp"
+                    filename = f"upload_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     image.save(filepath, 'BMP')
                     
@@ -190,8 +194,6 @@ def create_app():
                 image = image.convert('RGB')
 
             pixels = list(image.getdata())
-            # Convert list of tuples to list of lists
-            pixels_list = [list(p) for p in pixels]
 
             return {
                 'width': image.width,
@@ -200,7 +202,7 @@ def create_app():
                 # Return scrolling configuration for display client
                 'scroll_direction': img.scroll_direction,
                 'scroll_speed': img.scroll_speed,
-                'pixels': pixels_list
+                'pixels': pixels
             }
         except Exception as e:
             return {'error': str(e)}, 500
@@ -209,4 +211,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', debug=True)
+    # Only enable debug mode if FLASK_DEBUG is explicitly set to a truthy value
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() in ['true', '1', 't']
+    app.run(host='0.0.0.0', debug=debug_mode)
