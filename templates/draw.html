@@ -65,8 +65,8 @@
         window.FPAC = {
             displays: {{ displays|tojson|safe }},
             routes: {
-                saveDrawing: "{{ url_for('save_drawing') }}",
-                index: "{{ url_for('index') }}"
+                saveDrawing: "{{ url_for('main.save_drawing') }}",
+                index: "{{ url_for('main.index') }}"
             }
         };
     </script>

@@ -27,7 +27,7 @@ class SaveDrawingErrorTestCase(unittest.TestCase):
 
     def test_save_drawing_pil_error(self):
         # Simulate PIL error
-        with patch('app.PILImage.open', side_effect=UnidentifiedImageError("Invalid image")):
+        with patch('blueprints.main.PILImage.open', side_effect=UnidentifiedImageError("Invalid image")):
             # Send a valid base64 payload
             payload = {
                 'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
@@ -42,7 +42,7 @@ class SaveDrawingErrorTestCase(unittest.TestCase):
 
     def test_save_drawing_db_error(self):
         # Simulate DB error
-        with patch('app.db.session.commit', side_effect=SQLAlchemyError("DB Error")):
+        with patch('utils.db.session.commit', side_effect=SQLAlchemyError("DB Error")):
              payload = {
                 'image': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
                 'display_name': 'test'
