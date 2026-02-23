@@ -11,6 +11,8 @@ from PIL import Image as PILImage
 
 from extensions import db, login_manager
 from models import User, Image
+from PIL import UnidentifiedImageError
+from sqlalchemy.exc import SQLAlchemyError
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -143,8 +145,18 @@ def create_app(test_config=None):
                 raise e
 
             return {'success': True}
+        except UnidentifiedImageError as e:
+            app.logger.error(f"Invalid image format: {e}")
+            return {'success': False, 'error': 'Invalid image format'}
+        except SQLAlchemyError as e:
+            app.logger.error(f"Database error: {e}")
+            return {'success': False, 'error': 'Database error'}
+        except (OSError, IOError) as e:
+            app.logger.error(f"File save error: {e}")
+            return {'success': False, 'error': 'File save error'}
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            app.logger.error(f"Unexpected error: {e}")
+            return {'success': False, 'error': 'An unexpected error occurred'}
 
     @app.route('/upload', methods=['GET', 'POST'])
     @login_required
