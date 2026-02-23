@@ -1,0 +1,189 @@
+const displays = window.FPAC.displays;
+const canvas = document.getElementById('pixelCanvas');
+const ctx = canvas.getContext('2d');
+let pixelSize = 10;
+let width = 32;
+let height = 32;
+let isDrawing = false;
+let currentColor = '#FFFFFF';
+
+// Initialize canvas with black background
+ctx.fillStyle = '#000000';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+function resizeCanvas() {
+    width = parseInt(document.getElementById('width').value);
+    height = parseInt(document.getElementById('height').value);
+
+    const displaySelect = document.getElementById('displaySelect');
+    const display = displays[parseInt(displaySelect.value)];
+
+    if (display) {
+        if (display.max_width && width > display.max_width) {
+            alert('Width exceeds maximum for this display');
+            width = display.max_width;
+            document.getElementById('width').value = width;
+        }
+        if (display.max_height && height > display.max_height) {
+            alert('Height exceeds maximum for this display');
+            height = display.max_height;
+            document.getElementById('height').value = height;
+        }
+    }
+
+    canvas.width = width * pixelSize;
+    canvas.height = height * pixelSize;
+
+    // Fill with black on resize
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function onDisplayChange() {
+    const select = document.getElementById('displaySelect');
+    const widthInput = document.getElementById('width');
+    const heightInput = document.getElementById('height');
+    const maxResolutionSpan = document.getElementById('maxResolution');
+
+    const display = displays[parseInt(select.value)];
+    if (display) {
+        // Set values
+        widthInput.value = display.width;
+        heightInput.value = display.height;
+
+        // Set max values
+        if (display.max_width) widthInput.max = display.max_width;
+        if (display.max_height) heightInput.max = display.max_height;
+
+        if (display.max_width && display.max_height) {
+            maxResolutionSpan.innerText = `(Max: ${display.max_width}x${display.max_height})`;
+        } else {
+            maxResolutionSpan.innerText = '';
+        }
+
+        resizeCanvas();
+    }
+}
+
+function updateZoom(newSize) {
+    newSize = parseInt(newSize);
+    document.getElementById('zoomValue').innerText = newSize;
+
+    // Create temp canvas to save current image
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(canvas, 0, 0);
+
+    // Update pixel size
+    pixelSize = newSize;
+
+    // Resize main canvas
+    canvas.width = width * pixelSize;
+    canvas.height = height * pixelSize;
+
+    // Disable smoothing for pixel art scaling
+    ctx.imageSmoothingEnabled = false;
+
+    // Draw back the saved image scaled to new size
+    ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+}
+
+function setColor(color) {
+    currentColor = color;
+    document.getElementById('color').value = color;
+}
+
+document.getElementById('color').addEventListener('change', (e) => {
+    currentColor = e.target.value;
+});
+
+function drawPixel(x, y) {
+    const col = Math.floor(x / pixelSize);
+    const row = Math.floor(y / pixelSize);
+
+    ctx.fillStyle = currentColor;
+    ctx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    drawPixel(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (isDrawing) {
+        drawPixel(e.offsetX, e.offsetY);
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    isDrawing = false;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    isDrawing = false;
+});
+
+function saveImage() {
+    // Create a temporary canvas to draw the image at 1:1 scale
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
+
+    // Draw the image onto the temp canvas, scaling down
+    tempCtx.drawImage(canvas, 0, 0, width, height);
+
+    // Get data URL
+    const dataURL = tempCanvas.toDataURL('image/png');
+
+    const displaySelect = document.getElementById('displaySelect');
+    let displayName = null;
+    if (displaySelect.value) {
+        displayName = displays[parseInt(displaySelect.value)].name;
+    }
+
+    const scrollDirection = document.getElementById('scrollDirection').value;
+    const scrollSpeed = parseInt(document.getElementById('scrollSpeed').value);
+
+    // Send to server
+    fetch(window.FPAC.routes.saveDrawing, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            image: dataURL,
+            display_name: displayName,
+            scroll_direction: scrollDirection,
+            scroll_speed: scrollSpeed
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Image saved successfully!');
+            window.location.href = window.FPAC.routes.index;
+        } else {
+            alert('Error saving image: ' + data.error);
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Error saving image');
+    });
+}
+
+// Initialize with default display if available
+if (displays.length > 0) {
+    onDisplayChange();
+}
+
+document.getElementById('scrollDirection').addEventListener('change', function() {
+    const speedInput = document.getElementById('scrollSpeed');
+    if (this.value !== 'none' && parseInt(speedInput.value) === 0) {
+        speedInput.value = 1;
+    }
+});
