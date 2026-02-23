@@ -2,7 +2,7 @@ import base64
 import io
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
@@ -106,7 +106,7 @@ def create_app(test_config=None):
         # Save as BMP
         try:
             image = PILImage.open(io.BytesIO(image_bytes))
-            filename = f"drawing_{current_user.id}_{int(datetime.utcnow().timestamp())}.bmp"
+            filename = f"drawing_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             image.save(filepath, 'BMP')
             
@@ -145,7 +145,7 @@ def create_app(test_config=None):
                     if image.mode != 'RGB':
                         image = image.convert('RGB')
                         
-                    filename = f"upload_{current_user.id}_{int(datetime.utcnow().timestamp())}.bmp"
+                    filename = f"upload_{current_user.id}_{int(datetime.now(timezone.utc).timestamp())}.bmp"
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     image.save(filepath, 'BMP')
                     
