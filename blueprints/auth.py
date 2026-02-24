@@ -23,8 +23,9 @@ def register():
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
+        login_user(user)
         flash('Registration successful')
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('main.index'))
     return render_template('register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
