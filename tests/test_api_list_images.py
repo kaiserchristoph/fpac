@@ -77,6 +77,7 @@ class APIListImagesTestCase(unittest.TestCase):
         self.assertEqual(img_data_1['scroll_speed'], 5)
         # Verify URL structure
         self.assertIn('uploads/test1.bmp', img_data_1['url'])
+        self.assertEqual(img_data_1.get('username'), 'testuser')
 
         # Verify the second image
         img_data_2 = next((img for img in data['images'] if img['filename'] == 'test2.bmp'), None)
@@ -87,6 +88,7 @@ class APIListImagesTestCase(unittest.TestCase):
         self.assertEqual(img_data_2['scroll_direction'], 'right')
         self.assertEqual(img_data_2['scroll_speed'], 10)
         self.assertIn('uploads/test2.bmp', img_data_2['url'])
+        self.assertEqual(img_data_2.get('username'), 'testuser')
 
 if __name__ == '__main__':
     unittest.main()
