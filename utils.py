@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 from extensions import db
 from models import Image
+from PIL import Image as PILImage
 
 def save_image_artifact(pil_image, user_id, upload_folder, filename_prefix="image_", metadata=None, executor=None):
     """
@@ -71,3 +72,51 @@ def save_image_artifact(pil_image, user_id, upload_folder, filename_prefix="imag
             raise e
 
     return db_image
+
+def resize_image_to_display(pil_image, display_config):
+    """
+    Resizes an image to fit the display configuration.
+
+    Args:
+        pil_image: PIL Image object.
+        display_config: Dictionary containing 'width', 'height', 'max_width', 'max_height'.
+
+    Returns:
+        Resized PIL Image object (or original if no resize needed).
+    """
+    if not display_config:
+        return pil_image
+
+    width = pil_image.width
+    height = pil_image.height
+
+    d_width = display_config['width']
+    d_height = display_config['height']
+    d_max_width = display_config.get('max_width', d_width)
+    d_max_height = display_config.get('max_height', d_height)
+
+    # 1. If smaller (or equal) in both dimensions, keep size.
+    if width <= d_width and height <= d_height:
+        return pil_image
+
+    # 2. Calculate potential scales and resulting dimensions
+    candidates = []
+
+    # Option A: Fix Width to Display Width
+    scale_w = d_width / width
+    new_h_from_w = int(height * scale_w)
+    if new_h_from_w <= d_max_height:
+        candidates.append((scale_w, (d_width, new_h_from_w)))
+
+    # Option B: Fix Height to Display Height
+    scale_h = d_height / height
+    new_w_from_h = int(width * scale_h)
+    if new_w_from_h <= d_max_width:
+        candidates.append((scale_h, (new_w_from_h, d_height)))
+
+    if candidates:
+        best_candidate = max(candidates, key=lambda x: x[0])
+        new_size = best_candidate[1]
+        return pil_image.resize(new_size, resample=PILImage.NEAREST)
+
+    return pil_image
