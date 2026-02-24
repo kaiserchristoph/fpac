@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from PIL import Image as PILImage
 from PIL import UnidentifiedImageError
 from sqlalchemy.exc import SQLAlchemyError
-from utils import save_image_artifact
+from utils import save_image_artifact, resize_image_to_display
 
 main_bp = Blueprint('main', __name__)
 
@@ -74,14 +74,43 @@ def upload():
             flash('No selected file')
             return redirect(request.url)
         if file:
+            display_index = request.form.get('display_index')
+            displays = current_app.config.get('DISPLAYS', [])
+
+            scroll_direction = request.form.get('scroll_direction', 'none')
+            try:
+                scroll_speed = int(request.form.get('scroll_speed', 0))
+            except ValueError:
+                scroll_speed = 0
+
+            # If speed is 0, force scroll direction to none for consistency
+            if scroll_speed == 0:
+                scroll_direction = 'none'
+
             try:
                 image = PILImage.open(file)
+                display_name = None
+
+                if display_index is not None:
+                    try:
+                        idx = int(display_index)
+                        if 0 <= idx < len(displays):
+                            display_config = displays[idx]
+                            image = resize_image_to_display(image, display_config, scroll_direction)
+                            display_name = display_config.get('name')
+                    except ValueError:
+                        pass
 
                 save_image_artifact(
                     pil_image=image,
                     user_id=current_user.id,
                     upload_folder=current_app.config['UPLOAD_FOLDER'],
                     filename_prefix="upload_",
+                    metadata={
+                        'display_name': display_name,
+                        'scroll_direction': scroll_direction,
+                        'scroll_speed': scroll_speed
+                    },
                     executor=current_app.executor
                 )
 
@@ -90,4 +119,4 @@ def upload():
             except Exception as e:
                 flash(f'Error uploading file: {e}')
                 return redirect(request.url)
-    return render_template('upload.html')
+    return render_template('upload.html', displays=current_app.config.get('DISPLAYS', []))
