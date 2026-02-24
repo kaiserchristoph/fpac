@@ -8,6 +8,13 @@
         <label for="file">Select image:</label>
         <input type="file" name="file" id="file" required accept="image/*">
         <br>
+        <label for="display_index">Select Display:</label>
+        <select name="display_index" id="display_index">
+            {% for display in displays %}
+                <option value="{{ loop.index0 }}">{{ display.name }} ({{ display.width }}x{{ display.height }})</option>
+            {% endfor %}
+        </select>
+        <br>
         <button type="submit">Upload</button>
     </form>
 {% endblock %}
