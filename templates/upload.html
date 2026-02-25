@@ -8,6 +8,25 @@
         <label for="file">Select image:</label>
         <input type="file" name="file" id="file" required accept="image/*">
         <br>
+        <label for="display_index">Select Display:</label>
+        <select name="display_index" id="display_index">
+            {% for display in displays %}
+                <option value="{{ loop.index0 }}">{{ display.name }} ({{ display.width }}x{{ display.height }})</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="scroll_direction">Scroll Direction:</label>
+        <select name="scroll_direction" id="scroll_direction">
+            <option value="none" selected>None</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+        </select>
+        <br>
+        <label for="scroll_speed">Scroll Speed (0-100):</label>
+        <input type="number" name="scroll_speed" id="scroll_speed" value="0" min="0" max="100">
+        <br>
         <button type="submit">Upload</button>
     </form>
 {% endblock %}

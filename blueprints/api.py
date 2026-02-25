@@ -35,7 +35,8 @@ def api_list_images():
             'url': url_for('static', filename='uploads/' + img.filename, _external=True),
             'display_name': img.display_name,
             'scroll_direction': img.scroll_direction,
-            'scroll_speed': img.scroll_speed
+            'scroll_speed': img.scroll_speed,
+            'username': img.author.username if img.author else 'Unknown'
         })
     return {'images': image_list}
 

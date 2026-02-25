@@ -15,9 +15,6 @@ def create_app(test_config=None):
     app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB limit
 
-    if test_config:
-        app.config.update(test_config)
-    
     # Load displays configuration
     displays_path = os.path.join(os.path.dirname(__file__), 'displays.json')
     if os.path.exists(displays_path):
@@ -25,6 +22,9 @@ def create_app(test_config=None):
             app.config['DISPLAYS'] = json.load(f)
     else:
         app.config['DISPLAYS'] = []
+
+    if test_config:
+        app.config.update(test_config)
 
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])

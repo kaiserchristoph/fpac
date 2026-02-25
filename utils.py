@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 from extensions import db
 from models import Image
+from PIL import Image as PILImage
 
 def save_image_artifact(pil_image, user_id, upload_folder, filename_prefix="image_", metadata=None, executor=None):
     """
@@ -71,3 +72,91 @@ def save_image_artifact(pil_image, user_id, upload_folder, filename_prefix="imag
             raise e
 
     return db_image
+
+def resize_image_to_display(pil_image, display_config, scroll_direction='none'):
+    """
+    Resizes an image to fit the display configuration, considering scroll direction.
+
+    Args:
+        pil_image: PIL Image object.
+        display_config: Dictionary containing 'width', 'height', 'max_width', 'max_height'.
+        scroll_direction: Direction of scrolling ('none', 'left', 'right', 'up', 'down').
+
+    Returns:
+        Resized PIL Image object (or original if no resize needed).
+    """
+    if not display_config:
+        return pil_image
+
+    width = pil_image.width
+    height = pil_image.height
+
+    d_width = display_config['width']
+    d_height = display_config['height']
+    d_max_width = display_config.get('max_width', d_width)
+    d_max_height = display_config.get('max_height', d_height)
+
+    # Logic for non-scrolling or speed=0 (handled by caller passing 'none')
+    if scroll_direction == 'none':
+        # 1. If smaller (or equal) in both dimensions, keep size.
+        if width <= d_width and height <= d_height:
+            return pil_image
+
+        # 2. Calculate potential scales and resulting dimensions
+        candidates = []
+
+        # Option A: Fix Width to Display Width
+        scale_w = d_width / width
+        new_h_from_w = int(height * scale_w)
+        if new_h_from_w <= d_max_height:
+            candidates.append((scale_w, (d_width, new_h_from_w)))
+
+        # Option B: Fix Height to Display Height
+        scale_h = d_height / height
+        new_w_from_h = int(width * scale_h)
+        if new_w_from_h <= d_max_width:
+            candidates.append((scale_h, (new_w_from_h, d_height)))
+
+        if candidates:
+            best_candidate = max(candidates, key=lambda x: x[0])
+            new_size = best_candidate[1]
+            return pil_image.resize(new_size, resample=PILImage.NEAREST)
+
+        return pil_image
+
+    elif scroll_direction in ['left', 'right']:
+        # Horizontal scroll: Fit height to display height. Width scales proportionally.
+        # But if width ends up > max_width, we must cap it.
+
+        # If height <= d_height, we might not resize?
+        # But for scrolling, usually we want to fill the height.
+        # Let's assume standard behavior: Scale to fit height.
+
+        scale = d_height / height
+        new_width = int(width * scale)
+        new_height = d_height
+
+        # Check max width constraint (if it's intended as a hard limit for any image)
+        if new_width > d_max_width:
+            scale_limit = d_max_width / new_width
+            new_width = d_max_width
+            new_height = int(new_height * scale_limit)
+
+        if (new_width, new_height) != (width, height):
+            return pil_image.resize((new_width, new_height), resample=PILImage.NEAREST)
+
+    elif scroll_direction in ['up', 'down']:
+        # Vertical scroll: Fit width to display width. Height scales.
+        scale = d_width / width
+        new_width = d_width
+        new_height = int(height * scale)
+
+        if new_height > d_max_height:
+             scale_limit = d_max_height / new_height
+             new_height = d_max_height
+             new_width = int(new_width * scale_limit)
+
+        if (new_width, new_height) != (width, height):
+            return pil_image.resize((new_width, new_height), resample=PILImage.NEAREST)
+
+    return pil_image
