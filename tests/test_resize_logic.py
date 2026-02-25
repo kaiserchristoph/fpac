@@ -1,89 +1,78 @@
 import unittest
-from unittest.mock import MagicMock, patch
 from PIL import Image
-import utils
+from utils import resize_image_to_display
 
 class TestResizeLogic(unittest.TestCase):
-
     def setUp(self):
         self.display_config = {
             'width': 32,
             'height': 16,
-            'max_width': 64,
-            'max_height': 32
+            'max_width': 320,
+            'max_height': 320,
+            'name': 'TestDisplay'
         }
 
-    def test_smaller_image(self):
-        # Image is 10x10, fits within 32x16. Should not be resized.
-        image = Image.new('RGB', (10, 10))
-        resized_image = utils.resize_image_to_display(image, self.display_config)
-        self.assertEqual(resized_image.size, (10, 10))
-        self.assertIs(resized_image, image)  # Should return same object if no resize
+    def test_no_scroll_fit_width(self):
+        # Image larger than display, fits by width
+        img = Image.new('RGB', (64, 32)) # 2x larger
+        resized = resize_image_to_display(img, self.display_config, 'none', 0)
+        self.assertEqual(resized.size, (32, 16))
 
-    def test_wider_image(self):
-        # Image is 100x10.
-        # Target Width = 32. Scale = 0.32. New Height = 3.2 -> 3.
-        # 3 <= Max Height (32). Valid.
-        # Target Height = 16. Scale = 1.6. New Width = 160.
-        # 160 <= Max Width (64). Invalid.
-        # Expected: Resize to Width=32.
-        image = Image.new('RGB', (100, 10))
+    def test_no_scroll_fit_height(self):
+        # Image larger than display, fits by height
+        img = Image.new('RGB', (32, 64)) # Tall image
+        # Fit 32x64 into 32x16.
+        # Height is limiting factor. 16/64 = 0.25. Width 32*0.25 = 8.
+        # So 8x16.
+        resized = resize_image_to_display(img, self.display_config, 'none', 0)
+        self.assertEqual(resized.size, (8, 16))
 
-        with patch.object(Image.Image, 'resize', return_value=MagicMock(size=(32, 3))) as mock_resize:
-            resized_image = utils.resize_image_to_display(image, self.display_config)
+    def test_no_scroll_smaller(self):
+        # Image smaller than display
+        img = Image.new('RGB', (10, 10))
+        resized = resize_image_to_display(img, self.display_config, 'none', 0)
+        self.assertEqual(resized.size, (10, 10))
 
-            # Check arguments
-            args, kwargs = mock_resize.call_args
-            self.assertEqual(args[0], (32, 3))
-            self.assertEqual(kwargs.get('resample'), Image.NEAREST)
+    def test_horizontal_scroll_resize_height(self):
+        # Tall image, horizontal scroll. Should resize height to 16.
+        img = Image.new('RGB', (100, 100))
+        # Height 100 -> 16. Width 100 -> 16.
+        resized = resize_image_to_display(img, self.display_config, 'left', 10)
+        self.assertEqual(resized.size, (16, 16))
 
-    def test_taller_image(self):
-        # Image is 10x100.
-        # Target Width = 32. Scale = 3.2. New Height = 320.
-        # 320 <= Max Height (32). Invalid.
-        # Target Height = 16. Scale = 0.16. New Width = 1.6 -> 1 or 2 depending on rounding. Let's say 2.
-        # 2 <= Max Width (64). Valid.
-        # Expected: Resize to Height=16.
-        image = Image.new('RGB', (10, 100))
+    def test_horizontal_scroll_no_resize(self):
+        # Short image, horizontal scroll. Height < 16. Should not resize.
+        img = Image.new('RGB', (100, 10))
+        resized = resize_image_to_display(img, self.display_config, 'left', 10)
+        self.assertEqual(resized.size, (100, 10))
 
-        # Calculate expected width: 10 * (16/100) = 1.6 -> 2 (round) or 1 (int)?
-        # Usually resizing uses round or floor. Pillow resize takes integer tuple.
-        # If we calculate scale float, then multiply and round.
-        # Let's assume implementation does: int(width * scale), int(height * scale)
-        expected_width = int(10 * (16 / 100)) # 1
+    def test_vertical_scroll_resize_width(self):
+        # Wide image, vertical scroll. Should resize width to 32.
+        img = Image.new('RGB', (100, 100))
+        # Width 100 -> 32. Height 100 -> 32.
+        resized = resize_image_to_display(img, self.display_config, 'up', 10)
+        self.assertEqual(resized.size, (32, 32))
 
-        with patch.object(Image.Image, 'resize', return_value=MagicMock(size=(expected_width, 16))) as mock_resize:
-            resized_image = utils.resize_image_to_display(image, self.display_config)
+    def test_vertical_scroll_no_resize(self):
+        # Narrow image, vertical scroll. Width < 32. Should not resize.
+        img = Image.new('RGB', (10, 100))
+        resized = resize_image_to_display(img, self.display_config, 'up', 10)
+        self.assertEqual(resized.size, (10, 100))
 
-            args, kwargs = mock_resize.call_args
-            self.assertEqual(args[0][1], 16) # Height should match display height
-            self.assertEqual(kwargs.get('resample'), Image.NEAREST)
+    def test_scroll_speed_zero_behavior(self):
+        # Scroll options set but speed 0. Should behave like no scroll (fit to display).
+        img = Image.new('RGB', (100, 100))
+        # Should fit into 32x16.
+        # Height constrained -> 16. Width -> 16. (Since aspect ratio 1:1)
+        # Wait, if aspect 1:1, fitting in 32x16 means height=16, width=16.
+        resized = resize_image_to_display(img, self.display_config, 'left', 0)
+        self.assertEqual(resized.size, (16, 16))
 
-    def test_large_image_fits_both(self):
-        # Image is 64x32. Matches max dimensions exactly.
-        # Target Width = 32. Scale = 0.5. New Height = 16. Fits Max Height (32). Valid.
-        # Target Height = 16. Scale = 0.5. New Width = 32. Fits Max Width (64). Valid.
-        # Both scales are 0.5. Result 32x16.
-        image = Image.new('RGB', (64, 32))
-
-        with patch.object(Image.Image, 'resize', return_value=MagicMock(size=(32, 16))) as mock_resize:
-            resized_image = utils.resize_image_to_display(image, self.display_config)
-
-            args, kwargs = mock_resize.call_args
-            self.assertEqual(args[0], (32, 16))
-
-    def test_large_image_ambiguous(self):
-        # Image is 40x40.
-        # Target Width = 32. Scale = 0.8. New Height = 32. Fits Max Height (32). Valid.
-        # Target Height = 16. Scale = 0.4. New Width = 16. Fits Max Width (64). Valid.
-        # Both valid. 0.8 > 0.4. Should pick scale 0.8 -> 32x32.
-        image = Image.new('RGB', (40, 40))
-
-        with patch.object(Image.Image, 'resize', return_value=MagicMock(size=(32, 32))) as mock_resize:
-            resized_image = utils.resize_image_to_display(image, self.display_config)
-
-            args, kwargs = mock_resize.call_args
-            self.assertEqual(args[0], (32, 32))
+    def test_scroll_direction_none_behavior(self):
+        # Speed > 0 but direction none. Should behave like no scroll.
+        img = Image.new('RGB', (100, 100))
+        resized = resize_image_to_display(img, self.display_config, 'none', 10)
+        self.assertEqual(resized.size, (16, 16))
 
 if __name__ == '__main__':
     unittest.main()

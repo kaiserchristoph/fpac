@@ -73,13 +73,15 @@ def save_image_artifact(pil_image, user_id, upload_folder, filename_prefix="imag
 
     return db_image
 
-def resize_image_to_display(pil_image, display_config):
+def resize_image_to_display(pil_image, display_config, scroll_direction='none', scroll_speed=0):
     """
     Resizes an image to fit the display configuration.
 
     Args:
         pil_image: PIL Image object.
         display_config: Dictionary containing 'width', 'height', 'max_width', 'max_height'.
+        scroll_direction: Direction of scrolling ('none', 'left', 'right', 'up', 'down').
+        scroll_speed: Speed of scrolling.
 
     Returns:
         Resized PIL Image object (or original if no resize needed).
@@ -92,31 +94,48 @@ def resize_image_to_display(pil_image, display_config):
 
     d_width = display_config['width']
     d_height = display_config['height']
-    d_max_width = display_config.get('max_width', d_width)
-    d_max_height = display_config.get('max_height', d_height)
 
-    # 1. If smaller (or equal) in both dimensions, keep size.
-    if width <= d_width and height <= d_height:
-        return pil_image
+    scrolling = scroll_speed > 0 and scroll_direction != 'none'
 
-    # 2. Calculate potential scales and resulting dimensions
-    candidates = []
+    if not scrolling:
+        # 1. If smaller (or equal) in both dimensions, keep size.
+        if width <= d_width and height <= d_height:
+            return pil_image
 
-    # Option A: Fix Width to Display Width
-    scale_w = d_width / width
-    new_h_from_w = int(height * scale_w)
-    if new_h_from_w <= d_max_height:
-        candidates.append((scale_w, (d_width, new_h_from_w)))
+        # 2. Resize to fit within display dimensions
+        # Use simple aspect ratio scaling to fit within d_width x d_height
+        ratio = min(d_width / width, d_height / height)
+        new_width = int(width * ratio)
+        new_height = int(height * ratio)
 
-    # Option B: Fix Height to Display Height
-    scale_h = d_height / height
-    new_w_from_h = int(width * scale_h)
-    if new_w_from_h <= d_max_width:
-        candidates.append((scale_h, (new_w_from_h, d_height)))
+        # Ensure dimensions are at least 1
+        new_width = max(1, new_width)
+        new_height = max(1, new_height)
 
-    if candidates:
-        best_candidate = max(candidates, key=lambda x: x[0])
-        new_size = best_candidate[1]
-        return pil_image.resize(new_size, resample=PILImage.NEAREST)
+        return pil_image.resize((new_width, new_height), resample=PILImage.NEAREST)
+
+    else:
+        # Scrolling enabled
+        if scroll_direction in ['left', 'right']: # Horizontal
+            # Non-scrolling side is height.
+            if height > d_height:
+                # Resize so height = d_height
+                new_h = d_height
+                # Aspect ratio: new_w / new_h = width / height => new_w = (width / height) * new_h
+                new_w = int((width / height) * new_h)
+                new_w = max(1, new_w)
+                return pil_image.resize((new_w, new_h), resample=PILImage.NEAREST)
+            return pil_image
+
+        elif scroll_direction in ['up', 'down']: # Vertical
+            # Non-scrolling side is width.
+            if width > d_width:
+                # Resize so width = d_width
+                new_w = d_width
+                # Aspect ratio: new_h = (height / width) * new_w
+                new_h = int((height / width) * new_w)
+                new_h = max(1, new_h)
+                return pil_image.resize((new_w, new_h), resample=PILImage.NEAREST)
+            return pil_image
 
     return pil_image

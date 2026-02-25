@@ -75,6 +75,13 @@ def upload():
             return redirect(request.url)
         if file:
             display_index = request.form.get('display_index')
+            scroll_direction = request.form.get('scroll_direction', 'none')
+            scroll_speed = request.form.get('scroll_speed', 0)
+            try:
+                scroll_speed = int(scroll_speed)
+            except ValueError:
+                scroll_speed = 0
+
             displays = current_app.config.get('DISPLAYS', [])
 
             try:
@@ -86,7 +93,7 @@ def upload():
                         idx = int(display_index)
                         if 0 <= idx < len(displays):
                             display_config = displays[idx]
-                            image = resize_image_to_display(image, display_config)
+                            image = resize_image_to_display(image, display_config, scroll_direction, scroll_speed)
                             display_name = display_config.get('name')
                     except ValueError:
                         pass
@@ -96,7 +103,11 @@ def upload():
                     user_id=current_user.id,
                     upload_folder=current_app.config['UPLOAD_FOLDER'],
                     filename_prefix="upload_",
-                    metadata={'display_name': display_name},
+                    metadata={
+                        'display_name': display_name,
+                        'scroll_direction': scroll_direction,
+                        'scroll_speed': scroll_speed
+                    },
                     executor=current_app.executor
                 )
 
