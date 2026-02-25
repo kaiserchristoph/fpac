@@ -3,30 +3,32 @@
 {% block title %}Upload Image{% endblock %}
 
 {% block content %}
-    <h1>Upload Image</h1>
-    <form method="post" enctype="multipart/form-data">
-        <label for="file">Select image:</label>
-        <input type="file" name="file" id="file" required accept="image/*">
-        <br>
-        <label for="display_index">Select Display:</label>
-        <select name="display_index" id="display_index">
-            {% for display in displays %}
-                <option value="{{ loop.index0 }}">{{ display.name }} ({{ display.width }}x{{ display.height }})</option>
-            {% endfor %}
-        </select>
-        <br>
-        <label for="scrollDirection">Scroll Direction:</label>
-        <select name="scroll_direction" id="scrollDirection">
-            <option value="none">None</option>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-            <option value="up">Up</option>
-            <option value="down">Down</option>
-        </select>
-        <br>
-        <label for="scrollSpeed">Scroll Speed:</label>
-        <input type="number" name="scroll_speed" id="scrollSpeed" value="0" min="0" max="100">
-        <br>
-        <button type="submit">Upload</button>
-    </form>
+    <div class="upload-card">
+        <h1>Upload Image</h1>
+        <form method="post" enctype="multipart/form-data">
+            <label for="file">Select image:</label>
+            <input type="file" name="file" id="file" required accept="image/*">
+
+            <label for="display_index">Select Display:</label>
+            <select name="display_index" id="display_index">
+                {% for display in displays %}
+                    <option value="{{ loop.index0 }}">{{ display.name }} ({{ display.width }}x{{ display.height }})</option>
+                {% endfor %}
+            </select>
+
+            <label for="scrollDirection">Scroll Direction:</label>
+            <select name="scroll_direction" id="scrollDirection">
+                <option value="none">None</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+                <option value="up">Up</option>
+                <option value="down">Down</option>
+            </select>
+
+            <label for="scrollSpeed">Scroll Speed:</label>
+            <input type="number" name="scroll_speed" id="scrollSpeed" value="0" min="0" max="100">
+
+            <button type="submit" class="btn">Upload</button>
+        </form>
+    </div>
 {% endblock %}
