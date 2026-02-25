@@ -69,6 +69,14 @@
                 const nameText = document.createElement('small');
                 nameText.textContent = displayText;
                 item.appendChild(nameText);
+
+                item.appendChild(document.createElement('br'));
+
+                // Create username text
+                const userText = document.createElement('small');
+                userText.textContent = 'by ' + (img.username ? img.username : 'Unknown');
+                item.appendChild(userText);
+
                 gallery.appendChild(item);
             });
         }
