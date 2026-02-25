@@ -67,18 +67,17 @@ class TestUploadResize(unittest.TestCase):
 
         # Check dimensions
         # 100x100 -> Resize to fit 32x16 (max 64x32).
-        # Target W=32 -> H=32. (32, 32). Valid (32<=32).
-        # Target H=16 -> W=16. (16, 16). Valid (16<=64).
-        # Max is 32x32.
+        # Logic: fit within 32x16 strictly.
+        # Height constrained -> 16. Width -> 16. (16, 16).
 
-        self.assertEqual(image_record.width, 32)
-        self.assertEqual(image_record.height, 32)
+        self.assertEqual(image_record.width, 16)
+        self.assertEqual(image_record.height, 16)
 
         # Verify file exists
         filepath = os.path.join(self.upload_folder, image_record.filename)
         self.assertTrue(os.path.exists(filepath))
         with Image.open(filepath) as saved_img:
-            self.assertEqual(saved_img.size, (32, 32))
+            self.assertEqual(saved_img.size, (16, 16))
 
 if __name__ == '__main__':
     unittest.main()

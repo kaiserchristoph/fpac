@@ -15,6 +15,18 @@
             {% endfor %}
         </select>
         <br>
+        <label for="scrollDirection">Scroll Direction:</label>
+        <select name="scroll_direction" id="scrollDirection">
+            <option value="none">None</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+        </select>
+        <br>
+        <label for="scrollSpeed">Scroll Speed:</label>
+        <input type="number" name="scroll_speed" id="scrollSpeed" value="0" min="0" max="100">
+        <br>
         <button type="submit">Upload</button>
     </form>
 {% endblock %}
