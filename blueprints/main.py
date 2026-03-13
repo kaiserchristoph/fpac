@@ -22,6 +22,9 @@ def draw():
 @login_required
 def save_drawing():
     data = request.get_json()
+    if not data or 'image' not in data:
+        return {'success': False, 'error': 'Missing image data'}, 400
+
     image_data = data['image']
     display_name = data.get('display_name')
     scroll_direction = data.get('scroll_direction', 'none')
