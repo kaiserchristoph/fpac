@@ -73,6 +73,42 @@ def save_image_artifact(pil_image, user_id, upload_folder, filename_prefix="imag
 
     return db_image
 
+def _resize_to_fit(pil_image, d_width, d_height):
+    """Resizes an image to fit within the specified display dimensions."""
+    width, height = pil_image.size
+    if width <= d_width and height <= d_height:
+        return pil_image
+
+    # Use simple aspect ratio scaling to fit within d_width x d_height
+    ratio = min(d_width / width, d_height / height)
+    new_width = max(1, int(width * ratio))
+    new_height = max(1, int(height * ratio))
+
+    return pil_image.resize((new_width, new_height), resample=PILImage.NEAREST)
+
+
+def _resize_for_horizontal_scroll(pil_image, d_height):
+    """Resizes an image for horizontal scrolling, ensuring its height matches the display height."""
+    width, height = pil_image.size
+    if height > d_height:
+        new_h = d_height
+        # Aspect ratio: new_w / new_h = width / height => new_w = (width / height) * new_h
+        new_w = max(1, int((width / height) * new_h))
+        return pil_image.resize((new_w, new_h), resample=PILImage.NEAREST)
+    return pil_image
+
+
+def _resize_for_vertical_scroll(pil_image, d_width):
+    """Resizes an image for vertical scrolling, ensuring its width matches the display width."""
+    width, height = pil_image.size
+    if width > d_width:
+        new_w = d_width
+        # Aspect ratio: new_h / new_w = height / width => new_h = (height / width) * new_w
+        new_h = max(1, int((height / width) * new_w))
+        return pil_image.resize((new_w, new_h), resample=PILImage.NEAREST)
+    return pil_image
+
+
 def resize_image_to_display(pil_image, display_config, scroll_direction='none', scroll_speed=0):
     """
     Resizes an image to fit the display configuration.
@@ -89,53 +125,18 @@ def resize_image_to_display(pil_image, display_config, scroll_direction='none', 
     if not display_config:
         return pil_image
 
-    width = pil_image.width
-    height = pil_image.height
-
     d_width = display_config['width']
     d_height = display_config['height']
 
     scrolling = scroll_speed > 0 and scroll_direction != 'none'
 
     if not scrolling:
-        # 1. If smaller (or equal) in both dimensions, keep size.
-        if width <= d_width and height <= d_height:
-            return pil_image
+        return _resize_to_fit(pil_image, d_width, d_height)
 
-        # 2. Resize to fit within display dimensions
-        # Use simple aspect ratio scaling to fit within d_width x d_height
-        ratio = min(d_width / width, d_height / height)
-        new_width = int(width * ratio)
-        new_height = int(height * ratio)
+    if scroll_direction in ['left', 'right']:
+        return _resize_for_horizontal_scroll(pil_image, d_height)
 
-        # Ensure dimensions are at least 1
-        new_width = max(1, new_width)
-        new_height = max(1, new_height)
-
-        return pil_image.resize((new_width, new_height), resample=PILImage.NEAREST)
-
-    else:
-        # Scrolling enabled
-        if scroll_direction in ['left', 'right']: # Horizontal
-            # Non-scrolling side is height.
-            if height > d_height:
-                # Resize so height = d_height
-                new_h = d_height
-                # Aspect ratio: new_w / new_h = width / height => new_w = (width / height) * new_h
-                new_w = int((width / height) * new_h)
-                new_w = max(1, new_w)
-                return pil_image.resize((new_w, new_h), resample=PILImage.NEAREST)
-            return pil_image
-
-        elif scroll_direction in ['up', 'down']: # Vertical
-            # Non-scrolling side is width.
-            if width > d_width:
-                # Resize so width = d_width
-                new_w = d_width
-                # Aspect ratio: new_h = (height / width) * new_w
-                new_h = int((height / width) * new_w)
-                new_h = max(1, new_h)
-                return pil_image.resize((new_w, new_h), resample=PILImage.NEAREST)
-            return pil_image
+    if scroll_direction in ['up', 'down']:
+        return _resize_for_vertical_scroll(pil_image, d_width)
 
     return pil_image
