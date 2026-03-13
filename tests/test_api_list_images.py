@@ -1,8 +1,6 @@
 import unittest
 import tempfile
 import shutil
-import os
-import json
 from app import create_app, db
 from models import User, Image
 
