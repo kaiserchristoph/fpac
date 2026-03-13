@@ -1,6 +1,7 @@
 import functools
 from flask import Blueprint, url_for, current_app, redirect
 from models import Image
+from sqlalchemy.orm import joinedload
 import os
 from PIL import Image as PILImage
 
@@ -24,7 +25,7 @@ def load_image_data(filepath, mtime):
 
 @api_bp.route('/images')
 def api_list_images():
-    images = Image.query.all()
+    images = Image.query.options(joinedload(Image.author)).all()
     image_list = []
     for img in images:
         image_list.append({
