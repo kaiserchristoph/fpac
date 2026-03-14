@@ -8,7 +8,7 @@
     
     <h2>Gallery</h2>
 
-    <div style="text-align: center; margin-bottom: 20px;">
+    <div class="filter-controls" style="text-align: center; margin-bottom: 20px;">
         <label for="displayFilter">Filter by Display:</label>
         <select id="displayFilter" onchange="filterGallery()">
             <option value="all">All</option>
@@ -18,7 +18,7 @@
         </select>
     </div>
 
-    <div class="gallery" id="gallery">
+    <div class="gallery-grid" id="gallery">
         <!-- Images will be loaded here via JS -->
     </div>
 
@@ -30,10 +30,11 @@
             gallery.innerHTML = '';
 
             if (images.length === 0) {
-                // Only show this message if we have NO images at all, or if filtering resulted in none.
-                // But if we're filtering, maybe we just show "No images for this display".
-                // For now, let's keep it simple.
-                gallery.innerHTML = '<p>No images found. <a href="{{ url_for("main.draw") }}">Draw one!</a></p>';
+                const emptyMessage = document.createElement('div');
+                emptyMessage.style.textAlign = 'center';
+                emptyMessage.style.gridColumn = '1 / -1';
+                emptyMessage.innerHTML = '<p>No images found. <a href="{{ url_for("main.draw") }}">Draw one!</a></p>';
+                gallery.appendChild(emptyMessage);
                 return;
             }
 
@@ -41,41 +42,46 @@
                 const item = document.createElement('div');
                 item.className = 'gallery-item';
 
-                let displayText = img.display_name ? img.display_name : 'Unknown';
+                // Image Container
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'gallery-image-container';
 
-                // Create link
                 const link = document.createElement('a');
                 link.href = img.url;
                 link.target = "_blank";
 
-                // Create image
                 const image = document.createElement('img');
                 image.src = img.url;
                 image.alt = img.filename;
 
                 link.appendChild(image);
-                item.appendChild(link);
+                imgContainer.appendChild(link);
+                item.appendChild(imgContainer);
 
-                item.appendChild(document.createElement('br'));
+                // Info Container
+                const info = document.createElement('div');
+                info.className = 'gallery-info';
 
-                // Create dimensions text
-                const dimText = document.createElement('small');
-                dimText.textContent = `${img.width}x${img.height}`;
-                item.appendChild(dimText);
+                // Display Name (Title)
+                const title = document.createElement('div');
+                title.className = 'gallery-title';
+                title.textContent = img.display_name || 'Untitled';
+                info.appendChild(title);
 
-                item.appendChild(document.createElement('br'));
+                // Metadata
+                const meta = document.createElement('div');
+                meta.className = 'gallery-meta';
 
-                // Create display text - use textContent to prevent XSS
-                const nameText = document.createElement('small');
-                nameText.textContent = displayText;
-                item.appendChild(nameText);
+                const dimText = document.createElement('span');
+                dimText.textContent = `Size: ${img.width}x${img.height}`;
+                meta.appendChild(dimText);
 
-                item.appendChild(document.createElement('br'));
+                const userText = document.createElement('span');
+                userText.textContent = `By: ${img.username || 'Unknown'}`;
+                meta.appendChild(userText);
 
-                // Create username text
-                const userText = document.createElement('small');
-                userText.textContent = 'by ' + (img.username ? img.username : 'Unknown');
-                item.appendChild(userText);
+                info.appendChild(meta);
+                item.appendChild(info);
 
                 gallery.appendChild(item);
             });

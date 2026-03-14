@@ -5,61 +5,68 @@
 {% block content %}
     <h1>Draw Pixel Art</h1>
 
-    <div>
-        <label for="displaySelect">Display:</label>
-        <select id="displaySelect" onchange="onDisplayChange()">
-            {% for display in displays %}
-                <option value="{{ loop.index0 }}">{{ display.name }}</option>
-            {% endfor %}
-        </select>
-        <span id="maxResolution" style="margin-left: 10px;"></span>
-    </div>
-    <br>
+    <div class="draw-container">
+        <!-- Controls Sidebar -->
+        <div class="draw-controls">
+            <div class="control-group">
+                <span class="control-label">Display</span>
+                <select id="displaySelect" onchange="onDisplayChange()">
+                    {% for display in displays %}
+                        <option value="{{ loop.index0 }}">{{ display.name }}</option>
+                    {% endfor %}
+                </select>
+                <small id="maxResolution" style="color: var(--text-secondary);"></small>
+            </div>
 
-    <div>
-        <label for="width">Width:</label>
-        <input type="number" id="width" value="32" min="1" max="128">
-        <label for="height">Height:</label>
-        <input type="number" id="height" value="32" min="1" max="128">
-        <button onclick="resizeCanvas()">Resize</button>
-    </div>
-    <br>
+            <div class="control-group">
+                <span class="control-label">Dimensions</span>
+                <label for="width">Width:</label>
+                <input type="number" id="width" value="32" min="1" max="128">
+                <label for="height">Height:</label>
+                <input type="number" id="height" value="32" min="1" max="128">
+                <button onclick="resizeCanvas()" class="btn" style="width: 100%;">Resize Canvas</button>
+            </div>
 
-    <div>
-        <label for="zoom">Zoom (Pixel Size):</label>
-        <input type="range" id="zoom" min="1" max="30" value="10" oninput="updateZoom(this.value)">
-        <span id="zoomValue">10</span>
-    </div>
-    <br>
+            <div class="control-group">
+                <span class="control-label">Zoom: <span id="zoomValue">10</span></span>
+                <input type="range" id="zoom" min="1" max="30" value="10" oninput="updateZoom(this.value)" style="width: 100%;">
+            </div>
 
-    <div>
-        <label for="scrollDirection">Scroll Direction:</label>
-        <select id="scrollDirection">
-            <option value="none">None</option>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-            <option value="up">Up</option>
-            <option value="down">Down</option>
-        </select>
+            <div class="control-group">
+                <span class="control-label">Scrolling</span>
+                <label for="scrollDirection">Direction:</label>
+                <select id="scrollDirection">
+                    <option value="none">None</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                    <option value="up">Up</option>
+                    <option value="down">Down</option>
+                </select>
 
-        <label for="scrollSpeed">Speed (px/s):</label>
-        <input type="number" id="scrollSpeed" value="0" min="0" max="100">
-    </div>
-    <br>
+                <label for="scrollSpeed">Speed (px/s):</label>
+                <input type="number" id="scrollSpeed" value="0" min="0" max="100">
+            </div>
 
-    <div>
-        <label for="color">Color:</label>
-        <input type="color" id="color" value="#000000">
-        <button onclick="setColor('#000000')">Black</button>
-        <button onclick="setColor('#FFFFFF')">White</button>
-        <button onclick="setColor('#FF0000')">Red</button>
-        <button onclick="setColor('#00FF00')">Green</button>
-        <button onclick="setColor('#0000FF')">Blue</button>
+            <div class="control-group">
+                <span class="control-label">Color</span>
+                <input type="color" id="color" value="#000000" style="height: 50px; cursor: pointer;">
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;">
+                    <button class="btn" onclick="setColor('#000000')" style="background-color: #000; border-color: #fff;">&nbsp;</button>
+                    <button class="btn" onclick="setColor('#FFFFFF')" style="background-color: #fff; color: #000;">&nbsp;</button>
+                    <button class="btn" onclick="setColor('#FF0000')" style="background-color: #f00; border-color: #f00;">&nbsp;</button>
+                    <button class="btn" onclick="setColor('#00FF00')" style="background-color: #0f0; border-color: #0f0;">&nbsp;</button>
+                    <button class="btn" onclick="setColor('#0000FF')" style="background-color: #00f; border-color: #00f;">&nbsp;</button>
+                </div>
+            </div>
+
+            <button onclick="saveImage()" class="btn" style="width: 100%; margin-top: 10px;">Save Drawing</button>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            <canvas id="pixelCanvas" width="320" height="320" style="cursor: crosshair;"></canvas>
+        </div>
     </div>
-    <br>
-    <canvas id="pixelCanvas" width="320" height="320" style="border:1px solid #000; cursor: crosshair;"></canvas>
-    <br>
-    <button onclick="saveImage()">Save</button>
 
     <script>
         window.FPAC = {

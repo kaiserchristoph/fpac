@@ -4,38 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Pixel Art App{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        nav a { margin-right: 10px; }
-        .flash { color: red; }
-    </style>
 </head>
 <body>
-    <nav>
-        <a href="{{ url_for('main.index') }}">Home</a>
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('main.draw') }}">Draw</a>
-            <a href="{{ url_for('main.upload') }}">Upload</a>
-            <a href="{{ url_for('auth.logout') }}">Logout ({{ current_user.username }})</a>
-        {% else %}
-            <a href="{{ url_for('auth.login') }}">Login</a>
-            <a href="{{ url_for('auth.register') }}">Register</a>
-        {% endif %}
-    </nav>
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <a href="{{ url_for('main.index') }}">Pixel Art App</a>
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('main.index') }}">Home</a>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.draw') }}">Draw</a>
+                    <a href="{{ url_for('main.upload') }}">Upload</a>
+                    <div class="user-menu">
+                        <span class="username">{{ current_user.username }}</span>
+                        <a href="{{ url_for('auth.logout') }}" class="btn-logout">Logout</a>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Login</a>
+                    <a href="{{ url_for('auth.register') }}">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
     
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <ul class="flash">
-            {% for message in messages %}
-                <li>{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; {{ now.year if now else 2024 }} Pixel Art App. Create. Display. Enjoy.</p>
+    </footer>
 </body>
 </html>

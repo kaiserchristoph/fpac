@@ -5,3 +5,6 @@ instance/
 venv/
 *.egg-info/
 .DS_Store
+static/uploads/*
+!static/uploads/.gitkeep
+server.log
